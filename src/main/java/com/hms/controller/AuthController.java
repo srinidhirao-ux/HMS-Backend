@@ -13,6 +13,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.context.SecurityContextImpl;
+import org.springframework.security.web.context.HttpSessionSecurityContextRepository;
 import org.springframework.security.web.context.SecurityContextRepository;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -44,6 +45,7 @@ public class AuthController {
         );
 
         // Store login information in the HTTP session.
+        httpRequest.getSession(true);
         SecurityContext context = new SecurityContextImpl(authentication);
         SecurityContextHolder.setContext(context);
         securityContextRepository.saveContext(context, httpRequest, httpResponse);
@@ -57,7 +59,18 @@ public class AuthController {
     @GetMapping("/status")
     public ApiResponse<Map<String, Object>> status(HttpServletRequest request) {
         HttpSession session = request.getSession(false);
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        Authentication authentication = null;
+
+        if (session != null) {
+            Object savedContext = session.getAttribute(HttpSessionSecurityContextRepository.SPRING_SECURITY_CONTEXT_KEY);
+            if (savedContext instanceof SecurityContext securityContext) {
+                authentication = securityContext.getAuthentication();
+            }
+        }
+
+        if (authentication == null) {
+            authentication = SecurityContextHolder.getContext().getAuthentication();
+        }
 
         boolean loggedIn = session != null
                 && authentication != null
@@ -66,7 +79,8 @@ public class AuthController {
 
         return ApiResponse.success("Authentication status", Map.of(
                 "loggedIn", loggedIn,
-                "username", loggedIn ? authentication.getName() : ""
+                "username", loggedIn ? authentication.getName() : "",
+                "hasSession", session != null
         ));
     }
 }
