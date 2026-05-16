@@ -1,6 +1,7 @@
 package com.hms.config;
 
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -16,7 +17,7 @@ import java.util.List;
 @Configuration
 public class CorsConfig {
 
-    @Value("${app.cors.allowed-origin-patterns:}")
+    @Value("${app.cors.allowed-origin-patterns:*}")
     private String allowedOriginPatterns;
 
     @Bean
@@ -29,7 +30,7 @@ public class CorsConfig {
 
         configuration.setAllowedOriginPatterns(originPatterns);
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"));
-        configuration.setAllowedHeaders(List.of(""));
+        configuration.setAllowedHeaders(List.of("*"));
         configuration.setExposedHeaders(List.of("Set-Cookie"));
         configuration.setAllowCredentials(true);
         configuration.setMaxAge(3600L);
@@ -40,7 +41,8 @@ public class CorsConfig {
     }
 
     @Bean
-    public FilterRegistrationBean<CorsFilter> corsFilterRegistration(CorsConfigurationSource source) {
+    public FilterRegistrationBean<CorsFilter> corsFilterRegistration(
+            @Qualifier("corsConfigurationSource") CorsConfigurationSource source) {
         FilterRegistrationBean<CorsFilter> bean = new FilterRegistrationBean<>(new CorsFilter(source));
         bean.setOrder(Ordered.HIGHEST_PRECEDENCE);
         return bean;
